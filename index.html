@@ -53,17 +53,18 @@
     </script> -->
 
     <!--     <script type="text/javascript">
-      
+
         var ua = navigator.userAgent.toLowerCase();//获取判断用的对象
         //判断是否是微信下访问
-        if (ua.match(/MicroMessenger/i) == "micromessenger") {   
+        if (ua.match(/MicroMessenger/i) == "micromessenger") {
             if (/(iPhone|iPad|iPod|iOS)/i.test(navigator.userAgent)) {
-                 location.href="https://mp.weixin.qq.com/s/wAqlH99Quy7BQNiCW32iAg";  
-            }               
+                 location.href="https://mp.weixin.qq.com/s/wAqlH99Quy7BQNiCW32iAg";
+            }
         }
     </script> -->
 
     <link rel="stylesheet" type="text/css" href="style-mobile.css" />
+    <link rel="stylesheet" type="text/css" href="layer/layer.css" />
 
 </head>
 
@@ -100,7 +101,7 @@
         <!-- if (typeof(killads)=='undefined'){ -->
         <!-- alert('广告被过滤'); -->
         <!-- } -->
-    </script> 
+    </script>
 -->
 
 
@@ -109,6 +110,8 @@
 
     <!-- <script type="text/javascript" src="//imasdk.googleapis.com/js/sdkloader/ima3.js"></script> -->
     <script type="text/javascript" src="ads.js"></script>
+    <script type="text/javascript" src="layer/jquery.min.js"></script>
+    <script type="text/javascript" src="layer/layer.min.js"></script>
 
     <script src="src/settings.js" charset="utf-8"></script>
 
@@ -144,6 +147,38 @@
 
 
         }
+
+        window.combineNum = 2;
+        function changeCombineNum(ele, combineNum) {
+            $('[name=combineNum]').css('background-color', '');
+            $(ele).css('background-color', '#1E9FFF');
+            window.combineNum = combineNum;
+        }
+
+        layer.open({
+            type: 1
+            , title: false //不显示标题栏
+            , closeBtn: false
+            , area: '300px;'
+            , shade: 0.8
+            , id: 'layer2' //设定一个id，防止重复弹出
+            , resize: false
+            , btn: ['开始游戏']
+            , btnAlign: 'c'
+            , shadeClose: true //开启遮罩关闭
+            , moveType: 1 //拖拽模式，0或者1
+            , content:
+                '<div style="padding: 10px;text-align:center; line-height: 5px; background-color: #393D49; color: #fff;"><h4>模式选择</h4>'
+                + '<button name="combineNum" onclick="changeCombineNum(this, 1)">一消（原地升天）</button><br>'
+                + '<button name="combineNum" style="background-color:#1E9FFF" onclick="changeCombineNum(this, 2)">二消（原汁原味）</button><br>'
+                + '<button name="combineNum" onclick="changeCombineNum(this, 3)">三消（抓耳挠腮）</button><br>'
+                + '<button name="combineNum" onclick="changeCombineNum(this, 4)">四消（寸步难行）</button><br>'
+                + '<button name="combineNum" onclick="changeCombineNum(this, 5)">五消（进退无门）</button><br>'
+                + '<button name="combineNum" onclick="changeCombineNum(this, 6)">六消（束手待毙）</button><br>'
+                + '</div>',
+
+            success: function (layer) {}
+        });
 
         var loadintT = document.getElementById("loadingText");
         var loadintGif = document.getElementById("loadingImg")
@@ -246,21 +281,21 @@
      data-ad-slot="7048809290"
      ></ins>
 <script>
-	 var ads = document.getElementsByClassName('adsbygoogle')[0]; 
+	 var ads = document.getElementsByClassName('adsbygoogle')[0];
 
-	 if (document.body.clientHeight > 700){  
-	 	ads.style.height = 80+'px'; 
-	 }else{     
-	 	ads.style.height = 60+'px';    
+	 if (document.body.clientHeight > 700){
+	 	ads.style.height = 80+'px';
+	 }else{
+	 	ads.style.height = 60+'px';
 	 }
-    
+
 </script>
 
 <script>
 	function ShowBannerAD(){
 		(adsbygoogle = window.adsbygoogle || []).push({});
 	}
-	
+
 </script> -->
 
     <!-- <script async data-ad-client="ca-pub-3932234672445376" data-ad-channel="7171445254" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"> -->

@@ -3353,35 +3353,153 @@ window.__require = function e(t, n, o) {
                     var e = this.getNumberTime;
                     return this.getNumberTime++, this.returnNumber = !0, e
                 }, t.prototype.onBeginContact = function(e, t, n) {
-                    var o = this;
-                    if ("downwall" == n.node.group && (t.node.parent = cc.find("Canvas/fruitNode"), 0 == this.wallColl && (d.default.Instance.Play(5, !1, 1), this.wallColl++)), "fruit" == n.node.group) {
+                    function myCustomizedContact() {
+                        const nodes = cc.find("Canvas/fruitNode").children
+
+                        // 1. 定义并查集的相关函数
+                        var parent = Array(nodes.length)
+                        var count = Array(nodes.length)
+                        for (let i = 0; i < nodes.length; i++) {
+                            parent[i] = i
+                            count[i] = 1
+                        }
+
+                        function isContact(a, b) {
+                            const radius = a.width / 2 + b.width / 2
+                            const dx = a.x - b.x
+                            const dy = a.y - b.y
+                            return dx * dx + dy * dy <= radius * radius + 1e-5
+                        }
+
+                        function getParent(a) {
+                            if (parent[a] === a) {
+                                return a
+                            }
+                            return parent[a] = getParent(parent[a])
+                        }
+
+                        function merge(a, b) {
+                            const aParent = getParent(a)
+                            const bParent = getParent(b)
+
+                            // 如果 a 和 b 已经挨在一起（包括间接），直接返回
+                            if (aParent === bParent) {
+                                return
+                            }
+
+                            // 此时 a 和 b 未挨在一起，需要合并，我们以 _id 小的为根
+                            if(nodes[aParent]._id < nodes[bParent]._id) {
+                                parent[bParent] = aParent
+                                count[aParent] += count[bParent]
+                            } else {
+                                parent[aParent] = bParent
+                                count[bParent] += count[aParent]
+                            }
+                        }
+
+                        // 2. 计算挨在一起的相同水果
+                        nodes.forEach((node, i) => {
+                            const nodeFruitNumber = node.getComponent('fruitData').fruitNumber
+                            for (let j = i + 1; j < nodes.length; j++) {
+                                // 如果相同水果挨在一起，就进行合并
+                                if (nodeFruitNumber === nodes[j].getComponent('fruitData').fruitNumber && isContact(node, nodes[j])) {
+                                    merge(i, j)
+                                }
+                            }
+                        })
+
+                        // 3. 遍历最终结果，找到挨在一起的个数大于等于 window.combineNum 的水果
+                        nodes.forEach((node, ii) => {
+                            // 我们只处理最小的那个节点，这样方便处理，不用判重
+                            if (ii !== getParent(ii) || count[ii] < window.combineNum) {
+                                return
+                            }
+                            // 这里看起来就是为了只执行后面一次
+                            if (0 !== node.getComponent("fruitData").getNumber()) {
+                                return
+                            }
+
+                            // 这个时候就要开始执行合并后逻辑了
+                            const nodeFruitNumber = node.getComponent('fruitData').fruitNumber
+                            // 大西瓜不能继续合成
+                            if (nodeFruitNumber === 10) {
+                                return
+                            }
+                            // 如果是 半个西瓜，则不再允许用户点击
+                            if (nodeFruitNumber === 9) {
+                                a.default.playerTouch = !1
+                            }
+
+                            node.pengzhuangCount += 1
+                            // 如果一次有 x 个水果一起合成，那么最后分数要乘以 x - window.combineNum + 1 倍
+                            // 例如：三合一的难度， 4 个合成一个，则可获得 2 倍分数
+                            a.default.score += (nodeFruitNumber + 1) * (count[ii] - window.combineNum + 1)
+                            u.default.Instance.SetScoreTween(a.default.score)
+                            // 设置碰撞半径为 0
+                            nodes.forEach((other, j) => {
+                                if (getParent(j) !== ii) {
+                                    return
+                                }
+
+                                other.getComponent(cc.PhysicsCircleCollider).radius = 0
+                                other.getComponent(cc.PhysicsCircleCollider).apply()
+                            })
+
+                            cc.tween(node).to(.1, {position: node.position}).call(function() {
+                                // 创建新水果
+                                i.default.Instance.createFruitSui(nodeFruitNumber, node.position)
+                                i.default.Instance.createFruitL(nodeFruitNumber, node.position, node.width)
+                                i.default.Instance.createLevelUpFruit(nodeFruitNumber + 1, node.position)
+
+                                // 销毁原有水果
+                                nodes.forEach((other, j) => {
+                                    if (getParent(j) !== ii) {
+                                        return
+                                    }
+
+                                    other.active = !1
+                                    other.destroy()
+                                })
+
+                                // 还未合成大西瓜，则直接返回
+                                if (nodeFruitNumber !== 9) {
+                                    return
+                                }
+
+                                // 处理合成大西瓜的场景（以下未改动，是原来部分逻辑）
+                                var e = cc.find("Canvas/upEffectParent").getChildByName("daxigua");
+                                e.active = !0
+                                e.opacity = 0
+                                cc.tween(e).to(.5, {opacity: 150}).start();
+                                var c = new cc.Node;
+                                c.addComponent(cc.Sprite).spriteFrame = l.default.Instance.fruit[10]
+                                c.parent = cc.find("Canvas/upEffectParent")
+                                c.position = cc.v2(0, -500)
+                                c.scale = 0;
+                                var r = new cc.Node;
+                                r.addComponent(cc.Sprite).spriteFrame = l.default.Instance.caidia[6]
+                                r.scale = 3
+                                r.parent = c
+                                r.position = cc.v2(0)
+                                cc.tween(r).by(5, {angle: 360}).repeatForever().start();
+                                var s = new cc.Node;
+                                s.addComponent(cc.Sprite).spriteFrame = l.default.Instance.fruit[10]
+                                s.parent = c
+                                s.position = cc.v2(0)
+                                d.default.Instance.Play(4, !1, 1)
+                                i.default.Instance.ribbonEffect(cc.v2(0, 0))
+                                c.runAction(cc.sequence(cc.spawn(cc.jumpBy(1, 0, 0, 300, 1), cc.scaleTo(1, 1)), cc.delayTime(1), cc.spawn(cc.moveTo(1, cc.v2(0, 500)), cc.scaleTo(1, 0)), cc.callFunc(function() {
+                                    a.default.score += 100, u.default.Instance.SetScoreTween(a.default.score), e.active = !1, a.default.playerTouch = !0, c.destroy()
+                                })))
+                            }).start()
+                        })
+                    }
+
+                    "downwall" == n.node.group && (t.node.parent = cc.find("Canvas/fruitNode"), 0 == this.wallColl && (d.default.Instance.Play(5, !1, 1), this.wallColl++))
+                    if ("fruit" == n.node.group) {
                         if (this.endCtrl = !0, t.node.y < n.node.y) return;
                         t.node.parent = cc.find("Canvas/fruitNode"), i.default.Instance.fruitHeigth = i.default.Instance.findHighestFruit(), null != t.node.getComponent(cc.RigidBody) && (t.node.getComponent(cc.RigidBody).angularVelocity = 0);
-                        var c = this.fruitNumber,
-                            r = n.node.getComponent("fruitData").fruitNumber;
-                        c == r && c < 9 && r < 9 ? (this.pengzhuangCount += 1, 0 == t.node.getComponent("fruitData").getNumber() && (a.default.score += this.fruitNumber + 1, u.default.Instance.SetScoreTween(a.default.score), n.node.getComponent(cc.PhysicsCircleCollider).radius = 0, n.node.getComponent(cc.PhysicsCircleCollider).apply(), this.node.getComponent(cc.PhysicsCircleCollider).radius = 0, this.node.getComponent(cc.PhysicsCircleCollider).apply(), cc.tween(t.node).to(.1, {
-                            position: n.node.position
-                        }).call(function() {
-                            i.default.Instance.createFruitSui(o.fruitNumber, n.node.position), i.default.Instance.createFruitL(o.fruitNumber, n.node.position, n.node.width), i.default.Instance.createLevelUpFruit(o.fruitNumber + 1, n.node.position), n.node.active = !1, t.node.active = !1, n.node.destroy(), t.node.destroy()
-                        }).start())) : c == r && 9 == c && 9 == r && (this.pengzhuangCount += 1, 0 == t.node.getComponent("fruitData").getNumber() && (a.default.score += this.fruitNumber + 1, u.default.Instance.SetScoreTween(a.default.score), n.node.getComponent(cc.PhysicsCircleCollider).radius = 0, n.node.getComponent(cc.PhysicsCircleCollider).apply(), this.node.getComponent(cc.PhysicsCircleCollider).radius = 0, this.node.getComponent(cc.PhysicsCircleCollider).apply(), a.default.playerTouch = !1, cc.tween(t.node).to(.1, {
-                            position: n.node.position
-                        }).call(function() {
-                            i.default.Instance.createFruitSui(o.fruitNumber, n.node.position), i.default.Instance.createFruitL(o.fruitNumber, n.node.position, n.node.width), i.default.Instance.createLevelUpFruit(o.fruitNumber + 1, n.node.position);
-                            var e = cc.find("Canvas/upEffectParent").getChildByName("daxigua");
-                            e.active = !0, e.opacity = 0, cc.tween(e).to(.5, {
-                                opacity: 150
-                            }).start();
-                            var c = new cc.Node;
-                            c.addComponent(cc.Sprite).spriteFrame = l.default.Instance.fruit[10], c.parent = cc.find("Canvas/upEffectParent"), c.position = cc.v2(0, -500), c.scale = 0;
-                            var r = new cc.Node;
-                            r.addComponent(cc.Sprite).spriteFrame = l.default.Instance.caidia[6], r.scale = 3, r.parent = c, r.position = cc.v2(0), cc.tween(r).by(5, {
-                                angle: 360
-                            }).repeatForever().start();
-                            var s = new cc.Node;
-                            s.addComponent(cc.Sprite).spriteFrame = l.default.Instance.fruit[10], s.parent = c, s.position = cc.v2(0), d.default.Instance.Play(4, !1, 1), i.default.Instance.ribbonEffect(cc.v2(0, 0)), c.runAction(cc.sequence(cc.spawn(cc.jumpBy(1, 0, 0, 300, 1), cc.scaleTo(1, 1)), cc.delayTime(1), cc.spawn(cc.moveTo(1, cc.v2(0, 500)), cc.scaleTo(1, 0)), cc.callFunc(function() {
-                                a.default.score += 100, u.default.Instance.SetScoreTween(a.default.score), e.active = !1, a.default.playerTouch = !0, c.destroy()
-                            }))), n.node.active = !1, t.node.active = !1, n.node.destroy(), t.node.destroy()
-                        }).start()))
+                        myCustomizedContact()
                     }
                 }, t.prototype.createBoom = function() {
                     var e = r.default.Spawn("boom", cc.find("Canvas/upEffectParent"));
